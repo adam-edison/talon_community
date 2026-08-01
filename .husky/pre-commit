@@ -1,5 +1,0 @@
-#!/bin/sh
-. "$(dirname "$0")/dwa-check.sh"
-
-# dwa quality-check
-#dwa environment-check
