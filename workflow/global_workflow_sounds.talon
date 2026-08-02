@@ -20,8 +20,12 @@ parrot(shh:stop): user.sound_scroll_down_stop()
 scroll double: user.sound_scroll_speed_multiply(2.0)
 scroll half: user.sound_scroll_speed_multiply(0.5)
 
-# Sound mode select: spit opens the mode menu
-parrot(spit): user.sound_mode_select_toggle()
+# Command/dictation toggle
+parrot(whistle:stop): user.workflow_toggle_command_dictation()
 
 # Left drag toggle with notifications
 parrot(cha): user.workflow_toggle_left_drag()
+
+# Copy / paste
+parrot(wince): edit.copy()
+parrot(spit): edit.paste()

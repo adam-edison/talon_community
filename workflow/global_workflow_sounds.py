@@ -2,10 +2,10 @@
 Global workflow sounds: scroll (sss/shh) and command/dictation toggle.
 
 - Scrolling: sss/shh sustained 300ms scroll up/down.
-- Command/dictation toggle registered with sound_mode_select menu.
+- Command/dictation toggle: whistle.
 """
 
-from talon import Module, actions, app, cron, ctrl, scope
+from talon import Module, actions, cron, ctrl, scope
 
 mod = Module()
 
@@ -45,17 +45,6 @@ def _toggle_left_drag():
     else:
         actions.user.mouse_drag(0)
         actions.app.notify("Left drag ON")
-
-
-def _on_ready():
-    actions.user.sound_mode_register(
-        "command_dictation_toggle",
-        "Command/Dictation Toggle",
-        _toggle_command_dictation,
-    )
-
-
-app.register("ready", _on_ready)
 
 
 # --- Scrolling ---
