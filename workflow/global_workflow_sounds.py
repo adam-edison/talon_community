@@ -5,9 +5,11 @@ Global workflow sounds: scroll (sss/shh) and command/dictation toggle.
 - Command/dictation toggle: whistle.
 """
 
-from talon import Module, actions, cron, ctrl, scope
+from talon import Module, actions, cron, ctrl, scope, ui
 
 mod = Module()
+
+ITERM_BUNDLE_ID = "com.googlecode.iterm2"
 
 
 # --- Mode switch: command <-> dictation with notification ---
@@ -38,12 +40,57 @@ def _toggle_command_dictation():
         _switch_to_dictation()
 
 
+_drag_relay_job: cron.Job | None = None
+_iterm_drag_active = False
+
+
+def _relay_drag_position():
+    x, y = ctrl.mouse_pos()
+    ctrl.mouse_move(x, y)
+
+
+def _is_iterm_active() -> bool:
+    return ui.active_app().bundle == ITERM_BUNDLE_ID
+
+
+def _start_left_drag():
+    # iTerm2 only extends its own selection off synthetic LeftMouseDragged
+    # events (real hardware movement while the button is synthetically held
+    # is delivered as plain MouseMoved and gets ignored), and it reports
+    # clicks to any program requesting xterm mouse tracking instead of
+    # selecting text, unless Option is held. Hold Option and relay the real
+    # cursor position as synthetic moves to work around both.
+    global _drag_relay_job, _iterm_drag_active
+    _iterm_drag_active = _is_iterm_active()
+
+    if _iterm_drag_active:
+        actions.key("alt:down")
+
+    ctrl.mouse_click(0, down=True)
+
+    if _iterm_drag_active:
+        _drag_relay_job = cron.interval("16ms", _relay_drag_position)
+
+
+def _end_left_drag():
+    global _drag_relay_job, _iterm_drag_active
+    if job := _drag_relay_job:
+        cron.cancel(job)
+        _drag_relay_job = None
+
+    ctrl.mouse_click(0, up=True)
+
+    if _iterm_drag_active:
+        actions.key("alt:up")
+        _iterm_drag_active = False
+
+
 def _toggle_left_drag():
     if 0 in ctrl.mouse_buttons_down():
-        actions.user.mouse_drag_end()
+        _end_left_drag()
         actions.app.notify("Left drag OFF")
     else:
-        actions.user.mouse_drag(0)
+        _start_left_drag()
         actions.app.notify("Left drag ON")
 
 
