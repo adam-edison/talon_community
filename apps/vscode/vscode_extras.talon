@@ -293,3 +293,7 @@ git amend force:
     insert("git push --force-with-lease\n")
     sleep(3000ms)
     user.vscode("workbench.scm.focus")
+
+mark <number> {user.task_status}:
+    edit.jump_line(number)
+    user.mark_status(user.task_status)
