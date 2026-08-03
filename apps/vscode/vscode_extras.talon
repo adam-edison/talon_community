@@ -297,3 +297,7 @@ git amend force:
 mark <number> {user.task_status}:
     edit.jump_line(number)
     user.mark_status(user.task_status)
+
+complete <number>:
+    edit.jump_line(number)
+    user.mark_status("✅")
