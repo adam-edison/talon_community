@@ -9,8 +9,8 @@ profile switch: user.chrome_mod("shift-m")
 tab search: user.chrome_mod("shift-a")
 
 # Requires the "Previous Tab" extension (https://chromewebstore.google.com/detail/previous-tab/bjaniflnlhhofabpoamhnobeonjcjjpl)
-# with its shortcut set to alt-q via chrome://extensions/shortcuts.
-tab back: key(alt-q)
+# with its shortcut set to ctrl-q via chrome://extensions/shortcuts.
+tab back: key(ctrl-q)
 
 tab search <user.text>$:
     user.chrome_mod("shift-a")
