@@ -27,5 +27,8 @@ parrot(whistle:stop): user.workflow_toggle_command_dictation()
 parrot(cha): user.workflow_toggle_left_drag()
 
 # Copy / paste
-parrot(wince): edit.copy()
-parrot(spit): edit.paste()
+parrot(wince):
+    edit.copy()
+    app.notify("Copied")
+parrot(spit):
+    edit.paste()
