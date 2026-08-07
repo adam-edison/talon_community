@@ -43,4 +43,4 @@ skip <number_small>: user.skip_tab(number_small)
 
 skip clear: user.clear_skip_list()
 
-start ember <number>: insert("/branch-and-implement emb-{number}")
+start ember <number>: insert("/start emb-{number}")
