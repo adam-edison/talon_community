@@ -11,8 +11,10 @@ mode: dictation
     mode.disable("sleep")
     mode.disable("dictation")
     mode.enable("command")
+    app.notify("Command mode enabled")
 ^game mode$:
     mode.disable("sleep")
     mode.disable("dictation")
     mode.disable("command")
     mode.enable("user.game")
+    app.notify("Game mode enabled")
