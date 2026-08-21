@@ -14,9 +14,9 @@ def toggle_ctrl():
     global ctrl_held
     ctrl_held = not ctrl_held
     if ctrl_held:
-        ctrl.key_down("ctrl")
+        actions.key("ctrl:down")
     else:
-        ctrl.key_up("ctrl")
+        actions.key("ctrl:up")
 
 
 parrot_config = {

@@ -21,3 +21,11 @@ parrot(wince): user.the_pale_beyond_toggle_ctrl()
 parrot(spit): user.parrot_config_noise("spit")
 parrot(clop): key(space)
 
+quench: key(q)
+each: key(e)
+tab: key(tab)
+
+ending:
+    key(e:down)
+    sleep(3000ms)
+    key(e:up)
