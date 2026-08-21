@@ -1,4 +1,4 @@
-from talon import Module, Context, actions
+from talon import Module, Context, actions, ctrl
 
 mod = Module()
 ctx = Context()
@@ -6,6 +6,18 @@ ctx.matches = """
 win.title: /The Pale Beyond/i
 app.name: /The Pale Beyond/i
 """
+
+ctrl_held = False
+
+
+def toggle_ctrl():
+    global ctrl_held
+    ctrl_held = not ctrl_held
+    if ctrl_held:
+        ctrl.key_down("ctrl")
+    else:
+        ctrl.key_up("ctrl")
+
 
 parrot_config = {
     "spit spit": ("escape", lambda: actions.user.the_pale_beyond_escape()),
@@ -23,3 +35,7 @@ class Actions:
     def the_pale_beyond_escape():
         """Cancel / open menu"""
         actions.key("escape")
+
+    def the_pale_beyond_toggle_ctrl():
+        """Toggle ctrl held down"""
+        toggle_ctrl()
