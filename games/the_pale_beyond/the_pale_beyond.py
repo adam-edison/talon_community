@@ -9,7 +9,6 @@ app.name: /The Pale Beyond/i
 
 parrot_config = {
     "spit spit": ("escape", lambda: actions.user.the_pale_beyond_escape()),
-    "tih tih":   ("enter",  lambda: actions.user.the_pale_beyond_enter()),
 }
 
 
@@ -21,10 +20,6 @@ class UserActions:
 
 @mod.action_class
 class Actions:
-    def the_pale_beyond_enter():
-        """Confirm / interact"""
-        actions.key("space")
-
     def the_pale_beyond_escape():
         """Cancel / open menu"""
         actions.key("escape")

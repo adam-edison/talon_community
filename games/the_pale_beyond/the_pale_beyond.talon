@@ -18,9 +18,8 @@ parrot(puh): key(right)
 
 # Menu - double noise
 # spit spit -> escape
-# tih tih   -> enter (space)
 parrot(spit): user.parrot_config_noise("spit")
-parrot(tih): user.parrot_config_noise("tih")
+parrot(clop): key(space)
 
 # Voice commands
 quench: key(q)
