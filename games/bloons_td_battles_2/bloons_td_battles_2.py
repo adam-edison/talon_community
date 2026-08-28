@@ -1,4 +1,6 @@
-from talon import Context, Module, actions, cron, ctrl
+import re
+
+from talon import Context, Module, actions, cron, ctrl, scope, speech_system
 
 game_debug = False
 
@@ -6,7 +8,7 @@ mod = Module()
 ctx = Context()
 
 ctx.matches = """
-win.title: /Bloons/i
+app.name: /Bloons|Battles/i
 mode: user.game
 """
 
@@ -89,8 +91,8 @@ def _spam_tick():
 @mod.action_class
 class Actions:
     def bloons_log(message: str):
-        """Log [message] while game_debug is enabled"""
-        _log(message)
+        """Log [message] to the Talon log (always on)"""
+        print(f"[bloons] {message}")
 
     def bloons_send(position: str, count: int):
         """Send send-slot [position] [count] times"""
@@ -155,3 +157,23 @@ class Actions:
 
 
 _log("module loaded")
+
+
+def _on_phrase(d):
+    words = [w for w in d.get("phrase", [])]
+    text = " ".join(str(w) for w in words)
+    modes = scope.get("mode") or {}
+    app_name = scope.get("app.name")
+    title = scope.get("win.title")
+    in_game_mode = "user.game" in modes
+    is_game_app = app_name is not None and re.search(
+        "bloons|battles|btdb2", str(app_name), re.IGNORECASE
+    )
+    if in_game_mode or is_game_app:
+        print(
+            f"[bloons] phrase={text!r} app_name={app_name!r} title={title!r} "
+            f"modes={sorted(modes)} speech_enabled={actions.speech.enabled()}"
+        )
+
+
+speech_system.register("post:phrase", _on_phrase)

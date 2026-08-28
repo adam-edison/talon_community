@@ -1,7 +1,8 @@
-win.title: /Bloons/i
+app.name: /Bloons|Battles/i
 mode: user.game
-tag(): user.game_reserves_parrot_sounds
 -
+
+tag(): user.game_reserves_parrot_sounds
 
 settings():
     key_wait = 30
@@ -12,6 +13,7 @@ send {user.bloons_positions} <number_small>: user.bloons_send(bloons_positions, 
 spam {user.bloons_positions}: user.bloons_spam(bloons_positions)
 
 upgrade {user.bloons_upgrade_paths}: user.bloons_upgrade(bloons_upgrade_paths)
+place hero: user.bloons_place("0")
 place {user.bloons_place_targets}: user.bloons_place(bloons_place_targets)
 ability {user.bloons_positions}: user.bloons_ability(bloons_positions)
 
@@ -25,7 +27,9 @@ target left: user.bloons_key("ctrl-tab")
 cancel: user.bloons_key("escape")
 confirm: user.bloons_key("enter")
 
-notify me: app.notify("hello")
+notify me:
+    user.bloons_log("notify me command fired")
+    app.notify("hello")
 
 (stop | cease): user.bloons_clear_spam()
 
