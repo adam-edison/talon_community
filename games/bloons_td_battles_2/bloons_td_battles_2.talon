@@ -16,6 +16,10 @@ upgrade {user.bloons_upgrade_paths}: user.bloons_upgrade(bloons_upgrade_paths)
 place hero: user.bloons_place("0")
 place {user.bloons_place_targets}: user.bloons_place(bloons_place_targets)
 ability {user.bloons_positions}: user.bloons_ability(bloons_positions)
+full panic: user.bloons_full_panic()
+
+select <number_small>: user.bloons_select(number_small)
+clear monkeys: user.bloons_clear_monkeys()
 
 regrow: user.bloons_key("z")
 camo: user.bloons_key("x")
