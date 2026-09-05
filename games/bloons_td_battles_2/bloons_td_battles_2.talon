@@ -3,6 +3,7 @@ mode: user.game
 -
 
 tag(): user.game_reserves_parrot_sounds
+tag(): user.game_enables_screen_spots
 
 settings():
     key_wait = 30

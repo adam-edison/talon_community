@@ -11,3 +11,8 @@ mod.tag(
     "game_enables_eye_gaze",
     desc="Active when a game wants to enable the eye gaze mouse grid (default: eye gaze is disabled in game mode)",
 )
+
+mod.tag(
+    "game_enables_screen_spots",
+    desc="Active when a game wants to enable screen spots commands (default: screen spots are disabled in game mode)",
+)
