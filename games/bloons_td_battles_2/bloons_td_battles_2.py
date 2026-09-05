@@ -31,7 +31,7 @@ SLOT_KEYS = {
 UPGRADE_KEYS = {"1": ",", "2": ".", "3": "/"}
 PLACE_KEYS = {"0": "q", "1": "w", "2": "e", "3": "r", "farmer": "t", "spammer": "y", "bot": "u"}
 
-SEND_INTERVAL = "300ms"
+SEND_INTERVAL = "100ms"
 
 
 def _log(message: str):

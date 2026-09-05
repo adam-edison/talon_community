@@ -8,11 +8,13 @@ settings():
     key_wait = 30
     key_hold = 50
 
+<user.ordinals>: core.repeat_command(ordinals - 1)
+
 send {user.bloons_positions}: user.bloons_send_once(bloons_positions)
 send {user.bloons_positions} <number_small>: user.bloons_send(bloons_positions, number_small)
 spam {user.bloons_positions}: user.bloons_spam(bloons_positions)
 
-upgrade {user.bloons_upgrade_paths}: user.bloons_upgrade(bloons_upgrade_paths)
+(upgrade | grade) {user.bloons_upgrade_paths}: user.bloons_upgrade(bloons_upgrade_paths)
 place hero: user.bloons_place("0")
 place {user.bloons_place_targets}: user.bloons_place(bloons_place_targets)
 ability {user.bloons_positions}: user.bloons_ability(bloons_positions)
