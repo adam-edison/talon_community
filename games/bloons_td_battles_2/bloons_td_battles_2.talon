@@ -3,11 +3,11 @@ mode: user.game
 -
 
 tag(): user.game_reserves_parrot_sounds
-tag(): user.game_enables_screen_spots
 
 settings():
     key_wait = 30
     key_hold = 50
+    user.game_location_file = "games/bloons_td_battles_2/bloons_td_battles_2.talon"
 
 <user.ordinals>: core.repeat_command(ordinals - 1)
 
