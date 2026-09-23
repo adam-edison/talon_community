@@ -6,7 +6,15 @@ tag: user.game_subnautica
     user.game_subnautica_disable()
     app.notify("Subnautica commands disabled")
 
-full speed ahead: key(w:down)
-full stop: key(w:up)
+running: key(w:down)
+stop: key(w:up)
+
+one: key(1)
+two: key(2)
+three: key(3)
+four: key(4)
+five: key(5)
+
+word <user.word>: insert(word)
 
 parrot(clop): key(tab)
