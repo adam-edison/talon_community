@@ -2,6 +2,10 @@ mode: user.game
 tag: user.game_subnautica
 -
 
+settings():
+    key_hold = 8
+    key_wait = 16
+
 ^subnautica off$:
     user.game_subnautica_disable()
     app.notify("Subnautica commands disabled")
@@ -18,3 +22,15 @@ five: key(5)
 word <user.word>: insert(word)
 
 parrot(clop): key(tab)
+
+# secondary mapped in game
+# U = mouse click = use
+parrot(kuh): key(u)
+
+harvest: key(u:5)
+
+(bail out | bailout):
+    key(5)
+    sleep(15ms)
+    user.mouse_right_hold(5000)
+
