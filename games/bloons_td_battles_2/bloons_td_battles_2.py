@@ -33,6 +33,12 @@ PLACE_KEYS = {"0": "q", "1": "w", "2": "e", "3": "r", "farmer": "t", "spammer": 
 
 SEND_INTERVAL = "100ms"
 
+MARKER_COLOR = "1b5e20ff"
+MARKER_BACKGROUND_COLOR = "e8d5aeff"
+MARKER_TEXT_SIZE = 16
+MARKER_TEXT_WEIGHT = 1.2
+MARKER_OUTLINE_WIDTH = 2
+
 
 def _log(message: str):
     if game_debug:
@@ -95,24 +101,49 @@ def _spam_tick():
         actions.key(key)
 
 
-def _draw_markers(c):
-    paint = c.paint
-    paint.textsize = 16
-    paint.fake_bold_text = True
-    paint.color = "ff0000ff"
-    paint.stroke_width = 1.5
+def _prepare_marker_paint(paint):
+    paint.antialias = True
+    paint.textsize = MARKER_TEXT_SIZE
+    paint.font.embolden = True
     paint.text_align = Paint.TextAlign.CENTER
+
+
+def _draw_marker_circle(c, x, y, radius):
+    paint = c.paint
+
+    paint.style = Paint.Style.FILL
+    paint.color = MARKER_BACKGROUND_COLOR
+    c.draw_circle(x, y, radius)
+
+    paint.style = Paint.Style.STROKE
+    paint.stroke_width = MARKER_OUTLINE_WIDTH
+    paint.color = MARKER_COLOR
+    c.draw_circle(x, y, radius)
+
+
+def _draw_marker_number(c, text, x, baseline):
+    paint = c.paint
+    paint.color = MARKER_COLOR
+
+    paint.style = Paint.Style.FILL
+    c.draw_text(text, x, baseline)
+
+    paint.style = Paint.Style.STROKE
+    paint.stroke_width = MARKER_TEXT_WEIGHT
+    c.draw_text(text, x, baseline)
+
+
+def _draw_markers(c):
+    _prepare_marker_paint(c.paint)
+
     for index, position in enumerate(_placed_monkeys, start=1):
         text = str(index)
         x, y = position
-        text_rect = paint.measure_text(text)[1]
-        radius = max(text_rect.width, text_rect.height) / 2 + 2
+        text_rect = c.paint.measure_text(text)[1]
+        radius = max(text_rect.width, text_rect.height) / 2 + 5
 
-        paint.style = Paint.Style.STROKE
-        c.draw_circle(x, y, radius)
-
-        paint.style = Paint.Style.FILL
-        c.draw_text(text, x, y + text_rect.height / 2)
+        _draw_marker_circle(c, x, y, radius)
+        _draw_marker_number(c, text, x, y + text_rect.height / 2)
 
 
 def _close_markers():
