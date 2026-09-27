@@ -20,6 +20,12 @@ four: key(4)
 five: key(5)
 
 word <user.word>: insert(word)
+say <user.text>: insert(user.text)
+
+<number> meters: 
+    insert(" - ")
+    insert(number)
+    insert("m")
 
 parrot(clop): key(tab)
 
