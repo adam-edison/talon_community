@@ -78,6 +78,7 @@ slot twelve: key(equal)
 
 map: key(tab)
 aerial map: key(pause)
+waypoint: key(x)
 menu: key(escape)
 debug screen: key(backspace)
 console: key(`)
