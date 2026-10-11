@@ -7,6 +7,7 @@ mode: dictation
     mode.enable("dictation")
     user.code_clear_language_mode()
     user.gdb_disable()
+    app.notify("Dictation mode enabled")
 ^command mode$:
     mode.disable("sleep")
     mode.disable("dictation")
