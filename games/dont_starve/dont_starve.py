@@ -54,3 +54,17 @@ class Actions:
         actions.key(f"{modifier}:down")
         actions.mouse_click(0)
         actions.key(f"{modifier}:up")
+
+    def dont_starve_cook(n: int):
+        """Left clicks with a delay and repeats N times"""
+        for _ in range(n):
+            actions.mouse_click(0)
+            actions.sleep("1200ms")
+
+    def dont_starve_eat(n: int):
+        """Right clicks with a delay and repeats N times"""
+        for _ in range(n):
+            actions.mouse_click(1)
+            actions.sleep("1200ms")        
+
+

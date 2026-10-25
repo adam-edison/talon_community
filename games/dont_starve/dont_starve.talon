@@ -22,6 +22,7 @@ action: key(space)
 
 # auto-attack
 attack: key(f)
+parrot(tih): key(f)
 
 ###### Movement (held until "stop")
 
@@ -82,3 +83,8 @@ waypoint: key(x)
 menu: key(escape)
 debug screen: key(backspace)
 console: key(`)
+
+####### Cooking and Eating
+
+cook <number_small>: user.dont_starve_cook(number_small)
+eat <number_small>: user.dont_starve_eat(number_small)
