@@ -1,5 +1,5 @@
+import datetime as dt
 import os
-from datetime import datetime
 from typing import Optional
 
 from talon import Context, Module, actions, app, clip, cron, screen, settings, ui
@@ -62,11 +62,8 @@ class Actions:
         win = ui.active_window()
         clipboard_rect(win.rect)
 
-    def screenshot_rect(
-        rect: ui.Rect, title: str = "", screen_num: Optional[int] = None
-    ):
+    def screenshot_rect(rect: ui.Rect, title: str = ""):
         """Allow other modules this screenshot a rectangle"""
-        selected_screen = get_screen(screen_num)
         flash_rect(rect)
         img = screen.capture_rect(rect)
         path = get_screenshot_path(title)
@@ -82,7 +79,7 @@ def clipboard_rect(rect: ui.Rect):
 def get_screenshot_path(title: str = ""):
     if title:
         title = f" - {title.replace('.', '_')}"
-    date = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    date = dt.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     filename = f"Screenshot {date}{title}.png"
     folder_path = settings.get("user.screenshot_folder")
     path = os.path.expanduser(os.path.join(folder_path, filename))

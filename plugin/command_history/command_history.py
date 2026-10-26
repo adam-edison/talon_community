@@ -7,8 +7,18 @@ from ..subtitles.on_phrase import skip_phrase
 # We keep command_history_size lines of history, but by default display only
 # command_history_display of them.
 mod = Module()
-mod.setting("command_history_size", type=int, default=50)
-mod.setting("command_history_display", type=int, default=10)
+mod.setting(
+    "command_history_size",
+    type=int,
+    default=50,
+    desc="The total number of command history lines to display",
+)
+mod.setting(
+    "command_history_display",
+    type=int,
+    default=10,
+    desc="The default number of command history lines to display",
+)
 
 hist_more: bool = False
 history: list[str] = []
@@ -26,7 +36,6 @@ def on_phrase(j):
         history = history[-settings.get("user.command_history_size") :]
 
 
-# todo: dynamic rect?
 @imgui.open(y=0)
 def gui(gui: imgui.GUI):
     global history

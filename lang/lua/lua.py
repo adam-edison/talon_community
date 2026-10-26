@@ -1,7 +1,8 @@
+from typing import Optional
+
 from talon import Context, Module, actions, settings
 
 from ...core.described_functions import (
-    create_described_function,
     create_described_insert_between,
 )
 from ..tags.operators import Operators
@@ -37,7 +38,7 @@ ctx.lists["user.code_libraries"] = {
 }
 
 
-@mod.capture(rule="{self.lua_functions}")
+@mod.capture(rule="{user.lua_functions}")
 def lua_functions(m) -> str:
     "Returns a string"
     return m.lua_functions
@@ -51,8 +52,6 @@ def lua_functions(m) -> str:
 # NOTE: < 5.3 assumes Lua BitOp usage
 #       > 5.2 assumes native bitwise operators
 # ALSO NOTE: The documentation strings for these functions are used by help operators
-# TODO: Possibly add settings to define which library to use, as 5.2
-# includes bit32. Neovim uses luajit, which uses Lua BitOp
 def code_operator_bitwise_and():
     "Insert & or library call based on user.lua_version"
     if settings.get("user.lua_version") > 5.2:
@@ -203,5 +202,15 @@ class UserActions:
     def code_insert_library(text: str, selection: str):
         substitutions = {"1": selection, "0": selection}
         actions.user.insert_snippet_by_name("importStatement", substitutions)
+
+    ##
+    # comment_block
+    ##
+    def code_comment_block(text: Optional[str] = None):
+        if text is None:
+            substitutions = {}
+        else:
+            substitutions = {"0": text}
+        actions.user.insert_snippet_by_name("commentMultilineBlock", substitutions)
 
     # non-tag related actions

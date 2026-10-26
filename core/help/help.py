@@ -1,12 +1,21 @@
-import itertools
 import math
 import re
 from collections import defaultdict
-from itertools import islice
-from textwrap import wrap
-from typing import Any, Iterable, Optional, Tuple
+from collections.abc import Iterable
+from typing import Any, Optional
 
 from talon import Context, Module, actions, imgui, registry, settings
+
+from ...core.gui.gui import (
+    PageScroller,
+    Table,
+    TextRow,
+    compute_table_height,
+    create_bold_text,
+    create_italic_text,
+    open_gui,
+    pad_title_for_two_column_rows,
+)
 
 mod = Module()
 mod.list("help_contexts", desc="list of available contexts")
@@ -15,19 +24,19 @@ mod.setting(
     "help_max_contexts_per_page",
     type=int,
     default=20,
-    desc="Max contexts to display per page in help",
+    desc="The maximum number of contexts to display per page in help",
 )
 mod.setting(
     "help_max_command_lines_per_page",
     type=int,
     default=50,
-    desc="Max lines of command to display per page in help",
+    desc="The maximum number of lines of commands to display per page in help",
 )
 mod.setting(
     "help_sort_contexts_by_specificity",
     type=bool,
     default=True,
-    desc="If true contexts are sorted by specificity before alphabetically. If false, contexts are just sorted alphabetically.",
+    desc="Sort contexts by specificity before sorting alphabetically. Otherwise, contexts are just sorted alphabetically.",
 )
 
 ctx = Context()
@@ -51,7 +60,7 @@ selected_context_page = 1
 
 total_page_count = 1
 
-cached_active_contexts_list = []
+cached_active_contexts = set()
 
 live_update = True
 show_enabled_contexts_only = False
@@ -59,6 +68,11 @@ show_commands_only = False
 
 selected_list = None
 current_list_page = 1
+
+# used for programmatic scrolling with egui
+page_scroller: PageScroller | None = None
+# this is being used for the egui migrated guis
+current_gui = None
 
 
 def update_title():
@@ -94,23 +108,64 @@ def gui_formatters(gui: imgui.GUI):
         gui_formatters.hide()
 
 
+OPERATORS_MAX_COLUMN_LENGTH = 40
+
+
+def _add_rows_for_operator(table, prefix, operator_name, description):
+    postfix = "" if description else "*"
+    operator_name_text = f"    {prefix} {operator_name}{postfix}"
+    columns = [operator_name_text]
+    if description:
+        columns.append(description)
+        rich_text_functions = None
+    else:
+        rich_text_functions = (create_italic_text,)
+    table.add_row(TextRow(columns, rich_text_functions=rich_text_functions))
+
+
+def _compute_operator_description(operator):
+    # If the operator is implemented as text insertion,
+    # display the operator text
+    if isinstance(operator, str):
+        return operator
+    # If a documentation string is available, use that
+    if doc_string := getattr(operator, "__doc__", None):
+        return doc_string
+    # Otherwise display the operator name from list
+    return ""
+
+
+def _add_rows_for_operator_category_header(table, name):
+    row_text = f"{name} operators:"
+    table.add_row(TextRow((row_text,), rich_text_functions=(create_bold_text,)))
+
+
+def _add_missing_text_implementation_footnote(table):
+    row_text = "* operator is implemented as a function call and cannot be displayed"
+    table.add_row(TextRow((row_text,), rich_text_functions=(create_bold_text,)))
+
+
+def _compute_operator_list_names_with_prefixes():
+    # Associate the names of the operator lists with the corresponding prefix
+    op_list_names = ["array", "assignment", "lambda", "math", "pointer"]
+    names_with_prefix = [(name, "op") for name in op_list_names]
+    names_with_prefix += [("math_comparison", "is"), ("bitwise", "(bit | bitwise)")]
+    names_with_prefix.sort()
+    return names_with_prefix
+
+
 def update_operators_text():
     """For operators implemented for the active language, map spoken forms including operator prefix to
     the operator text for operators implemented as text insertion
     or an asterisk for operators implemented as a function call.
     """
-    global operators_text, total_page_count
+    global operators_text
     try:
         operators = actions.user.code_get_operators()
+        names_with_prefix = _compute_operator_list_names_with_prefixes()
 
-        # Associate the names of the operator lists with the corresponding prefix
-        op_list_names = ["array", "assignment", "lambda", "math", "pointer"]
-        names_with_prefix = [(name, "op") for name in op_list_names]
-        names_with_prefix += [("math_comparison", "is"), ("bitwise", "(bit | bitwise)")]
-        names_with_prefix.sort()
-
-        # Fill in the list by iterating over the operator lists
-        operators_text = []
+        # Fill in the table by iterating over the operator lists
+        table = Table(OPERATORS_MAX_COLUMN_LENGTH)
         has_operator_without_text_implementation = False
         for name, prefix in names_with_prefix:
             operators_list = actions.user.talon_get_active_registry_list(
@@ -120,83 +175,97 @@ def update_operators_text():
             for operator_name, operator_text in sorted(operators_list.items()):
                 # Only display operators implemented for the active language
                 if operator_text in operators:
-                    # If the operator is implemented as text insertion,
-                    # display the operator text
-                    operator = operators.get(operator_text)
-                    if isinstance(operator, str):
-                        text = ": " + operator
-                    # If a documentation string is available, use that
-                    elif doc_string := getattr(operator, "__doc__", None):
-                        text = ": " + doc_string
-                    # Otherwise display the operator name from list
-                    else:
-                        has_operator_without_text_implementation = True
-                        text = "*"
                     # Only add the header if an item in the list is defined in operators
                     if not has_added_first_list_item:
+                        _add_rows_for_operator_category_header(table, name)
                         has_added_first_list_item = True
-                        operators_text.append(f"{name} operators:")
+                    operator = operators.get(operator_text)
+                    description = _compute_operator_description(operator)
+                    _add_rows_for_operator(table, prefix, operator_name, description)
+                    if not description:
+                        has_operator_without_text_implementation = True
 
-                    operators_text.append(f" {prefix} {operator_name}{text}")
         if has_operator_without_text_implementation:
-            operators_text.append(
-                "* operator is implemented as a function call and cannot be displayed"
-            )
-        page_size = settings.get("user.help_max_command_lines_per_page")
-        total_page_count = math.ceil(len(operators_text) / page_size)
+            _add_missing_text_implementation_footnote(table)
+        page_scroller.page_size = settings.get("user.help_max_command_lines_per_page")
+        operators_text = table
     # This exception will get raised if there is no operators object defined in the active context
     except NotImplementedError:
         operators_text = None
 
 
-@imgui.open(y=0)
-def gui_operators(gui: imgui.GUI):
+def add_help_close_button(ui_wrapper):
+    if ui_wrapper.button("Help close"):
+        actions.user.help_hide()
+
+
+def add_page_navigation_buttons(ui_wrapper, scroller):
+    if not scroller:
+        return
+
+    if ui_wrapper.button("Help next"):
+        scroller.page_down()
+
+    if ui_wrapper.button("Help previous"):
+        scroller.page_up()
+
+
+@open_gui(y=0, refresh_period="500ms")
+async def gui_operators(ui, ui_wrapper):
     global operators_text
+    # use horizontal layout to prevent wrapping
+    async with ui.horizontal():
+        title = "Help: Operators"
+        if operators_text:
+            # add padding so the auto sizing creates enough width
+            title = pad_title_for_two_column_rows(title, OPERATORS_MAX_COLUMN_LENGTH)
+        ui_wrapper.header(title)
 
     if operators_text is None:
-        gui.text("Help: Operators (1/1)")
-        gui.line()
-        gui.text("There is no active programming language when you opened this menu")
-        gui.text("or the language does not have operator support.")
+        ui.separator()
+        ui.label(
+            "There is no active programming language when you opened this menu\nor the language does not have operator support."
+        )
     else:
-        page_size = settings.get("user.help_max_command_lines_per_page")
-        page_start = page_size * (current_list_page - 1)
-        page_end = page_start + page_size
-        gui.text(f"Help: Operators ({current_list_page}/{total_page_count})")
-        gui.line()
-        for text in operators_text[page_start:page_end]:
-            gui.text(text)
+        row_size = ui_wrapper.get_label_row_size()
+        maximum_height = compute_table_height(
+            row_size, ui_wrapper.get_item_spacing(), page_scroller.page_size
+        )
 
-        if total_page_count > 1:
-            gui.spacer()
-            if gui.button("Help next"):
-                actions.user.help_next()
+        await ui_wrapper.render_table(
+            headers=["", ""],
+            table=operators_text,
+            maximum_height=maximum_height,
+            row_height=row_size,
+            id_salt="help_operators",
+            scroller=page_scroller,
+        )
 
-            if gui.button("Help previous"):
-                actions.user.help_previous()
-    gui.spacer()
-    if gui.button("Help close"):
-        gui_operators.hide()
+    ui_wrapper.spacing()
+    async with ui.horizontal_wrapped():
+        add_help_close_button(ui_wrapper)
+        if operators_text and len(operators_text) > page_scroller.page_size:
+            add_page_navigation_buttons(ui_wrapper, page_scroller)
 
 
 def format_context_title(context_name: str) -> str:
-    global cached_active_contexts_list
+    global cached_active_contexts
     return "{} [{}]".format(
         context_name,
         (
             "ACTIVE"
-            if context_map.get(context_name, None) in cached_active_contexts_list
+            if context_map.get(context_name) in cached_active_contexts
             else "INACTIVE"
         ),
     )
 
 
 def format_context_button(index: int, context_label: str, context_name: str) -> str:
-    global cached_active_contexts_list
+    global cached_active_contexts
     global show_enabled_contexts_only
     should_show_asterisk: bool = (
         not show_enabled_contexts_only
-        and context_map.get(context_name, None) in cached_active_contexts_list
+        and context_map.get(context_name) in cached_active_contexts
     )
     postfix: str = "*" if should_show_asterisk else ""
 
@@ -234,8 +303,7 @@ def get_command_line_count(command: tuple[str, str]) -> int:
     lines = len(body.split("\n"))
     if lines == 1:
         return 1
-    else:
-        return lines + 1
+    return lines + 1
 
 
 def get_pages(item_line_counts: list[int]) -> list[int]:
@@ -277,7 +345,7 @@ def gui_context_help(gui: imgui.GUI):
     global selected_context_page
     global sorted_display_list
     global show_enabled_contexts_only
-    global cached_active_contexts_list
+    global cached_active_contexts
     global total_page_count
     global search_phrase
 
@@ -291,9 +359,7 @@ def gui_context_help(gui: imgui.GUI):
             )
         else:
             gui.text(
-                "Help: Active Contexts Only ({}/{})".format(
-                    current_context_page, total_page_count
-                )
+                f"Help: Active Contexts Only ({current_context_page}/{total_page_count})"
             )
 
         gui.line()
@@ -374,7 +440,7 @@ def draw_context_commands(gui: imgui.GUI):
 
     filtered_commands = [
         command
-        for command, page in zip(commands, pages)
+        for command, page in zip(commands, pages, strict=False)
         if page == selected_context_page
     ]
 
@@ -384,35 +450,43 @@ def draw_context_commands(gui: imgui.GUI):
 def draw_search_commands(gui: imgui.GUI):
     global search_phrase
     global total_page_count
-    global cached_active_contexts_list
+    global cached_active_contexts
     global selected_context_page
 
     title = f"Search: {search_phrase}"
     commands_grouped = get_search_commands(search_phrase)
-    commands_flat = list(itertools.chain.from_iterable(commands_grouped.values()))
 
     sorted_commands_grouped = sorted(
         commands_grouped.items(),
-        key=lambda item: context_map[item[0]] not in cached_active_contexts_list,
+        key=lambda item: context_map[item[0]] not in cached_active_contexts,
     )
 
-    pages = get_pages(
-        [
-            sum(get_command_line_count(command) for command in commands) + 3
-            for _, commands in sorted_commands_grouped
-        ]
-    )
+    # flatten to individual commands so get_pages applies the limit per-command, not per-context group
+    flat_commands = []
+    item_line_counts = []
+    for context, commands in sorted_commands_grouped:
+        for i, command in enumerate(commands):
+            flat_commands.append((context, command))
+            # add header overhead (title + separator + spacer) once per context group
+            item_line_counts.append(
+                get_command_line_count(command) + (3 if i == 0 else 0)
+            )
+    pages = get_pages(item_line_counts)
     total_page_count = max(pages, default=1)
 
     draw_commands_title(gui, title)
 
-    current_item_index = 1
-    for (context, commands), page in zip(sorted_commands_grouped, pages):
-        if page == selected_context_page:
+    current_context = None
+    for (context, command), page in zip(flat_commands, pages, strict=True):
+        if page != selected_context_page:
+            continue
+        if context != current_context:
+            if current_context is not None:
+                gui.spacer()
             gui.text(format_context_title(context))
             gui.line()
-            draw_commands(gui, commands)
-            gui.spacer()
+            current_context = context
+        draw_command(gui, command)
 
 
 def get_search_commands(phrase: str) -> dict[str, tuple[str, str]]:
@@ -443,19 +517,24 @@ def draw_commands_title(gui: imgui.GUI, title: str):
     gui.line()
 
 
+def draw_command(gui: imgui.GUI, command: tuple[str, str]):
+    key, val = command
+    if show_commands_only:
+        gui.text(key)
+        return
+
+    val = val.split("\n")
+    if len(val) > 1:
+        gui.text(f"{key}:")
+        for line in val:
+            gui.text(f"    {line}")
+    else:
+        gui.text(f"{key}: {val[0]}")
+
+
 def draw_commands(gui: imgui.GUI, commands: Iterable[tuple[str, str]]):
-    global show_commands_only
-    for key, val in commands:
-        if show_commands_only:
-            gui.text(key)
-        else:
-            val = val.split("\n")
-            if len(val) > 1:
-                gui.text(f"{key}:")
-                for line in val:
-                    gui.text(f"    {line}")
-            else:
-                gui.text(f"{key}: {val[0]}")
+    for command in commands:
+        draw_command(gui, command)
 
 
 def reset():
@@ -468,7 +547,10 @@ def reset():
     global show_commands_only
     global display_name_to_context_name_map
     global selected_list
+    global operators_text
     global current_list_page
+    global page_scroller
+    global current_gui
 
     current_context_page = 1
     sorted_display_list = []
@@ -479,60 +561,51 @@ def reset():
     show_commands_only = False
     display_name_to_context_name_map = {}
     selected_list = None
+    operators_text = None
     current_list_page = 1
+    page_scroller = None
+    current_gui = None
 
 
 def update_active_contexts_cache(active_contexts):
     # print("update_active_contexts_cache")
-    global cached_active_contexts_list
-    cached_active_contexts_list = active_contexts
-
-
-# example usage todo: make a list definable in .talon
-# overrides = {"generic browser": "broswer"}
-overrides = {}
+    global cached_active_contexts
+    cached_active_contexts = active_contexts
 
 
 def refresh_context_command_map(enabled_only=False):
+    """Update information on command contexts
+    enabled_only: indicates if only active contexts should be considered"""
     active_contexts = registry.last_active_contexts
+    active_context_cache = set()
 
     local_context_map = {}
     local_display_name_to_context_name_map = {}
     local_context_command_map = {}
-    cached_short_context_names = {}
+    cached_context_names = {}
 
     for context_name, context in registry.contexts.items():
         splits = context_name.split(".")
+        if splits[-1] != "talon" or (enabled_only and context not in active_contexts):
+            continue
+        current_context_map = {
+            str(val.rule.rule): val.script.code
+            for command_alias, val in context.commands.items()
+            if not enabled_only or command_alias in registry.commands
+        }
+        if not current_context_map:
+            continue
+        if context in active_contexts and is_any_context_command_active(context):
+            active_context_cache.add(context)
 
-        if "talon" == splits[-1]:
-            display_name = splits[-2].replace("_", " ")
+        local_context_command_map[context_name] = current_context_map
 
-            short_names = actions.user.create_spoken_forms(
-                display_name,
-                generate_subsequences=False,
-            )
+        display_name = splits[-2].replace("_", " ")
+        update_spoken_forms(cached_context_names, display_name, context_name)
 
-            if short_names[0] in overrides:
-                short_names = [overrides[short_names[0]]]
-            elif len(short_names) == 2 and short_names[1] in overrides:
-                short_names = [overrides[short_names[1]]]
-
-            if enabled_only and context in active_contexts or not enabled_only:
-                local_context_command_map[context_name] = {}
-                for command_alias, val in context.commands.items():
-                    if command_alias in registry.commands or not enabled_only:
-                        local_context_command_map[context_name][
-                            str(val.rule.rule)
-                        ] = val.script.code
-                if len(local_context_command_map[context_name]) == 0:
-                    local_context_command_map.pop(context_name)
-                else:
-                    for short_name in short_names:
-                        cached_short_context_names[short_name] = context_name
-
-                    # the last entry will contain no symbols
-                    local_display_name_to_context_name_map[display_name] = context_name
-                    local_context_map[context_name] = context
+        # the last entry will contain no symbols
+        local_display_name_to_context_name_map[display_name] = context_name
+        local_context_map[context_name] = context
 
     # Update all the global state after we've performed our calculations
     global context_map
@@ -552,8 +625,27 @@ def refresh_context_command_map(enabled_only=False):
     display_name_to_context_name_map = local_display_name_to_context_name_map
     rule_word_map = refresh_rule_word_map(local_context_command_map)
 
-    ctx.lists["self.help_contexts"] = cached_short_context_names
-    update_active_contexts_cache(active_contexts)
+    ctx.lists["user.help_contexts"] = cached_context_names
+    update_active_contexts_cache(active_context_cache)
+
+
+def update_spoken_forms(
+    context_spoken_forms: dict[str, str], display_name: str, context_name: str
+):
+    """Compute spoken forms for a display name and then update context_spoken_forms
+    to map those spoken forms to the context name"""
+    spoken_forms = actions.user.create_spoken_forms(
+        display_name,
+        generate_subsequences=False,
+    )
+
+    for spoken_form in spoken_forms:
+        context_spoken_forms[spoken_form] = context_name
+
+
+def is_any_context_command_active(context) -> bool:
+    """Returns if any command in the context is active"""
+    return any(command_alias in registry.commands for command_alias in context.commands)
 
 
 def get_sorted_display_keys(
@@ -574,8 +666,8 @@ def get_sorted_display_keys(
 def get_sorted_keys_by_context_specificity(
     context_map: dict[str, Any],
     display_name_to_context_name_map: dict[str, str],
-) -> list[Tuple[str, str, int]]:
-    def get_group(display_name) -> Tuple[str, str, int]:
+) -> list[tuple[str, str, int]]:
+    def get_group(display_name) -> tuple[str, str, int]:
         try:
             context_name = display_name_to_context_name_map[display_name]
             context = context_map[context_name]
@@ -585,12 +677,11 @@ def get_sorted_keys_by_context_specificity(
             if keys:
                 return (display_name, "Context-dependent", 1)
             return (display_name, "Global", 0)
-        except Exception as ex:
+        except:
             return (display_name, "", 0)
 
     grouped_list = [
-        get_group(display_name)
-        for display_name in display_name_to_context_name_map.keys()
+        get_group(display_name) for display_name in display_name_to_context_name_map
     ]
     return sorted(
         grouped_list,
@@ -644,76 +735,66 @@ def hide_all_help_guis():
     gui_operators.hide()
 
 
-def paginate_list(data, SIZE=None):
-    chunk_size = SIZE or settings.get("user.help_max_command_lines_per_page")
-    it = iter(data)
-    for i in range(0, len(data), chunk_size):
-        yield {k: data[k] for k in islice(it, chunk_size)}
+MAX_COLUMN_LENGTH_FOR_HELP_LIST = 20
+LIST_KEY_HEADER = "Spoken Form"
+LIST_VALUE_HEADER = "Value"
 
 
-def draw_list_commands(gui: imgui.GUI):
+@open_gui(y=0, refresh_period="500ms")
+async def gui_list_help(ui, ui_wrapper):
     global selected_list
-    global total_page_count
-    global selected_context_page
+    global page_scroller
 
-    talon_list = actions.user.talon_get_active_registry_list(selected_list)
-    # numpages = math.ceil(len(talon_list) / SIZE)
+    # clicking the close button forces a refresh even though we are closing this gui.
+    # #If we are closing this list, just return
+    if not selected_list:
+        return
 
-    pages_list = []
-
-    for item in paginate_list(talon_list):
-        pages_list.append(item)
-    # print(pages_list)
-
-    total_page_count = len(pages_list)
-    return pages_list
-
-
-@imgui.open(y=0)
-def gui_list_help(gui: imgui.GUI):
-    global total_page_count
-    global current_list_page
-    global selected_list
-
-    pages_list = draw_list_commands(gui)
-    total_page_count = len(pages_list)
-    # print(pages_list[current_page])
-
-    if total_page_count == 0:
-        page_info = "empty"
-    else:
-        page_info = f"{current_list_page}/{total_page_count}"
-
-    gui.text(f"List: {selected_list} ({page_info})")
+    # show list name and description for the title
+    title = f"List: {selected_list}"
+    # use the title to claim enough width: add enough padding to show columns with the maximum length
+    title = pad_title_for_two_column_rows(title, MAX_COLUMN_LENGTH_FOR_HELP_LIST)
 
     # Extract description from list declaration, i.e. mod.list(..., desc=...))
     if (desc := registry.decls.lists[selected_list].desc) is not None:
-        for line in wrap(desc):
-            gui.text(line)
+        subtitle = desc
+    else:
+        subtitle = ""
 
-    gui.line()
+    ui_wrapper.title(title, subtitle)
 
-    if len(pages_list) > 0:
-        for key, value in pages_list[current_list_page - 1].items():
-            gui.text(f"{value}: {key}")
+    # setup paging handling
+    page_size = settings.get("user.help_max_command_lines_per_page")
+    page_scroller.page_size = page_size
+    row_size = ui_wrapper.get_label_row_size()
+    maximum_height = compute_table_height(
+        row_size, ui_wrapper.get_item_spacing(), page_size
+    )
 
-    gui.spacer()
+    # get the list
+    talon_list = actions.user.talon_get_active_registry_list(selected_list)
+    table = Table(MAX_COLUMN_LENGTH_FOR_HELP_LIST)
+    table.add_text_rows(list(talon_list.items()))
 
-    if total_page_count > 1:
-        if gui.button("Help next"):
-            actions.user.help_next()
+    # show the rows in a table
+    if table.has_rows():
+        headers = [LIST_KEY_HEADER, LIST_VALUE_HEADER]
+        await ui_wrapper.render_table(
+            headers,
+            table,
+            maximum_height=maximum_height,
+            row_height=row_size,
+            id_salt="help_list",
+            scroller=page_scroller,
+        )
 
-        if gui.button("Help previous"):
-            actions.user.help_previous()
+    ui_wrapper.spacing()
 
-        if gui.button("Help return"):
-            actions.user.help_return()
-
-    if gui.button("Help refresh"):
-        actions.user.help_refresh()
-
-    if gui.button("Help close"):
-        actions.user.help_hide()
+    # show navigation buttons. these are arranged horizontally but will wrap onto more rows if needed
+    async with ui.horizontal_wrapped():
+        add_help_close_button(ui_wrapper)
+        if len(table) > page_size:
+            add_page_navigation_buttons(ui_wrapper, page_scroller)
 
 
 @mod.action_class
@@ -721,9 +802,12 @@ class Actions:
     def help_list(ab: str):
         """Provides the symbol dictionary"""
         # what you say is stored as a trigger
-        global selected_list
+        global selected_list, current_gui, page_scroller
+        hide_all_help_guis()
         reset()
+        current_gui = gui_list_help
         selected_list = ab
+        page_scroller = PageScroller()
         gui_list_help.show()
         register_events(True)
         ctx.tags = ["user.help_open"]
@@ -742,8 +826,11 @@ class Actions:
 
     def help_operators():
         """Displays the list of operator names"""
+        global page_scroller, current_gui
         reset()
         hide_all_help_guis()
+        current_gui = gui_operators
+        page_scroller = PageScroller()
         update_operators_text()
         gui_operators.show()
         register_events(True)
@@ -826,6 +913,11 @@ class Actions:
 
         global current_list_page
 
+        if page_scroller:
+            page_scroller.page_down()
+            refresh_gui()
+            return
+
         if gui_context_help.showing:
             if selected_context is None and search_phrase is None:
                 if current_context_page != total_page_count:
@@ -838,17 +930,11 @@ class Actions:
                 else:
                     selected_context_page = 1
 
-        if gui_list_help.showing or gui_operators.showing:
-            if current_list_page != total_page_count:
-                current_list_page += 1
-            else:
-                current_list_page = 1
-
     def help_select_index(index: int):
         """Select the context by a number"""
         global sorted_display_list, selected_context
-        if gui_context_help.showing:
-            if index < settings.get("user.help_max_contexts_per_page") and (
+        if gui_context_help.showing:  # noqa: SIM102
+            if index < settings.get("user.help_max_contexts_per_page") and (  # noqa: SIM102
                 (current_context_page - 1)
                 * settings.get("user.help_max_contexts_per_page")
                 + index
@@ -872,6 +958,11 @@ class Actions:
 
         global current_list_page
 
+        if page_scroller:
+            page_scroller.page_up()
+            refresh_gui()
+            return
+
         if gui_context_help.showing:
             if selected_context is None and search_phrase is None:
                 if current_context_page != 1:
@@ -884,12 +975,6 @@ class Actions:
                     selected_context_page -= 1
                 else:
                     selected_context_page = total_page_count
-
-        if gui_list_help.showing or gui_operators.showing:
-            if current_list_page != total_page_count:
-                current_list_page -= 1
-            else:
-                current_list_page = 1
 
     def help_return():
         """Returns to the main help window"""
@@ -932,3 +1017,9 @@ class Actions:
 
 def commands_updated(_):
     update_title()
+
+
+def refresh_gui():
+    # egui UIs must be refreshed to update without user interaction
+    if current_gui:
+        current_gui.refresh()

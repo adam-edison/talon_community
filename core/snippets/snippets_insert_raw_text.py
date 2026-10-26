@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from talon import Module, actions, app, settings
 
+from .snippets_parser import UNICODE_ESCAPED_BACKSLASH_PLACEHOLDER
+
 mod = Module()
 
 
@@ -11,14 +13,14 @@ mod.setting(
     "snippet_raw_text_spaces_per_tab",
     type=int,
     default=4,
-    desc="""The number of spaces per tab when inserting snippets as raw text. Set to -1 to insert tabs as tabs, such as in code editors that can expand tabs in pasted or typed text. This setting is provided for applications like web browsers and chat apps.""",
+    desc="""The number of spaces per tab when inserting snippets as raw text. Set to -1 to insert tabs as tabs, such as in code editors that can expand tabs in pasted or typed text. This setting is provided for applications like web browsers and chat apps that do not understand code formatting.""",
 )
 
 mod.setting(
     "snippet_raw_text_paste",
     type=bool,
     default=False,
-    desc="""If true, inserting snippets as raw text will always be done through pasting""",
+    desc="""Inserting snippets as raw text will always be done through pasting""",
 )
 
 RE_STOP = re.compile(
@@ -168,6 +170,7 @@ def format_tabs(text: str) -> str:
 
 
 def parse_snippet(body: str):
+    body = body.replace("\\\\", UNICODE_ESCAPED_BACKSLASH_PLACEHOLDER)
     # Some IM services will send the message on a tab
     body = format_tabs(body)
 
@@ -214,6 +217,9 @@ def parse_snippet(body: str):
         stop.columns_left = len(lines[stop.row]) - stop.col
 
     updated_snippet = "\n".join(lines)
+    updated_snippet = updated_snippet.replace(
+        UNICODE_ESCAPED_BACKSLASH_PLACEHOLDER, "\\"
+    )
 
     return updated_snippet, stops
 

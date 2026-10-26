@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Union
+from typing import Optional, Union
 
 from talon import Module, actions
 
@@ -49,7 +50,10 @@ EditAction = Union[
 ]
 
 mod = Module()
-mod.list("edit_action", desc="Actions for the edit command")
+mod.list(
+    "edit_action",
+    desc="Edit command actions. Follow an action by an edit modifier to perform the action on the modifier's target.",
+)
 
 
 @mod.capture(rule="{user.edit_action}")
@@ -119,6 +123,6 @@ class Actions:
             case _:
                 raise ValueError(f"Unknown edit action: {action_type}")
 
-    def get_simple_edit_action_callback(action_type: str) -> Callable | None:
+    def get_simple_edit_action_callback(action_type: str) -> Optional[Callable]:
         """Convert a edit action type created from a string into its associated Callback"""
         return simple_action_callbacks.get(action_type)

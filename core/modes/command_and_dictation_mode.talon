@@ -1,18 +1,14 @@
 mode: command
 mode: dictation
 -
+
 ^dictation mode$:
-    mode.disable("sleep")
-    mode.disable("command")
-    mode.enable("dictation")
-    user.code_clear_language_mode()
-    user.gdb_disable()
+    user.dictation_mode()
     app.notify("Dictation mode enabled")
 ^command mode$:
-    mode.disable("sleep")
-    mode.disable("dictation")
-    mode.enable("command")
+    user.command_mode()
     app.notify("Command mode enabled")
+^mixed mode$: user.mixed_mode()
 ^game mode$:
     mode.disable("sleep")
     mode.disable("dictation")

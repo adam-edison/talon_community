@@ -68,13 +68,13 @@ Note that it is also possible to install `community` by [downloading and extract
    - `paste that`, `copy that`, and `cut that` for pasting/copy/cutting, respectively.
 8. For community-generated documentation on Talon itself, please visit https://talon.wiki/.
 
-It's recommended to learn the alphabet first, then get familiar with the keys, symbols, formatters, mouse, and generic_editor commands.
+It's recommended to learn the alphabet first, then get familiar with the keys, symbols, formatters, mouse, and edit commands.
 
 Once you have the basics of text input down, try copying some code from one window to another.
 
 After that, explore using ordinal repetition for easily repeating a command without pausing (e.g., saying `go up fifth` will go up five lines), window switching (`focus chrome`), and moving around in your text editor of choice.
 
-If you use vim, just start with the numbers and alphabet, otherwise look at generic_editor.talon as well at jetbrains, vscode, and any other integrations.
+If you use vim, just start with the numbers and alphabet, otherwise look at edit.talon as well at jetbrains, vscode, and any other integrations.
 
 ### Alphabet
 
@@ -189,7 +189,7 @@ Python, C#, Talon and JavaScript language support is broken up into multiple tag
 
 Language-specific implementations of the above features are in files named `lang/{your-language}/{your-language}.py`.
 
-To add support for a new language, ensure appropriate extension is added/uncommented in the [`language_extensions` dictionary in language_modes.py](core/modes/language_modes.py#L9). Then create the following files:
+To add support for a new language, ensure appropriate extension is added/uncommented in the [`code_languages` list in code_languages.py](core/modes/code_languages.py#L17). Then create the following files:
 
 - `lang/{your-language}/{your-language}.py`
 - `lang/{your-language}/{your-language}.talon`
@@ -355,7 +355,7 @@ You then have a few options as to when to run it:
   - Note that because many of the rules automatically apply fixes, typically you just need to stage the changes that they made, then reattempt your commit.
   - Whether to use the hook comes down to personal taste. If you like to make many small incremental "work" commits developing a feature, it may be too much overhead.
 
-If you run into setup difficulty with `pre-commit`, you might want to ensure that you have a modern Python 3 local environment first. [pyenv](https://github.com/pyenv/pyenv) is good way to install such Python versions without affecting your system Python (recommend installing 3.9 to match Talon's current version). On macOS you can also `brew install pre-commit`.
+If you run into setup difficulty with `pre-commit`, you might want to ensure that you have a modern Python 3 local environment first. [uv](https://github.com/astral-sh/uv) is good way to install such Python versions without affecting your system Python. We recommend a version of Python matching Talon's current version, which is 3.11 for Talon 0.4 as of this writing (`uv tool install --python 3.11 pre-commit`).
 
 ## Automated tests
 
