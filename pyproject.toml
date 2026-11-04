@@ -1,5 +1,8 @@
 [tool.pytest.ini_options]
 pythonpath = [".", "test/stubs"]
+# Talon modules such as workflow/sounds_test/sounds_test.py end in _test.py
+# but are not tests, so only collect the test_*.py naming convention.
+python_files = ["test_*.py"]
 
 [tool.ruff]
 target-version = "py311"
