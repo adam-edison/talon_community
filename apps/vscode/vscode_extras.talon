@@ -15,11 +15,6 @@ auto fix: key(alt-enter)
 
 comment line: key(cmd-/)
 
-follower:
-    key(cmd:down)
-    mouse_click()
-    key(cmd:up)
-
 completer:
     key(tab)
     sleep(200ms)

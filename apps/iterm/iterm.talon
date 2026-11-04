@@ -10,11 +10,6 @@ tag(): user.kubectl
 tag(): user.tabs
 tag(): user.readline
 
-follower:
-    key(cmd:down)
-    mouse_click()
-    key(cmd:up)
-
 session <user.text>:
     key(cmd-i)
     sleep(100ms)
