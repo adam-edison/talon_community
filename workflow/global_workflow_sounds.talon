@@ -19,6 +19,7 @@ parrot(shh:stop): user.sound_scroll_down_stop()
 # sound scroll speed control
 scroll double: user.sound_scroll_speed_multiply(2.0)
 scroll half: user.sound_scroll_speed_multiply(0.5)
+scroll set <number_small>: user.sound_scroll_speed_save(number_small)
 
 # Command/dictation toggle
 parrot(whistle:stop): user.workflow_toggle_command_dictation()
