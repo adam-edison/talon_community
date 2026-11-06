@@ -74,6 +74,9 @@ remote control off:
     key(enter)
 
 next ticket:
+    insert("next ticket\n")
+
+linear ticket:
     key(cmd-i)
     sleep(100ms)
     key(tab:2)
