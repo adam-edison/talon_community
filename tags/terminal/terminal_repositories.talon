@@ -20,6 +20,8 @@ cursor dot: insert('cursor .\n')
 
 (claude | chat) launch: insert('claude\n')
 
+backlog browser: insert('backlog browser\n')
+
 (claude | chat) clear: insert('/clear\n')
 
 (claude | chat) resume:
