@@ -1,7 +1,7 @@
 app: brave
 browser.host: github.com
 -
-view all:
+check all:
     key(alt-g)
     sleep(1000ms)
     mouse_move(1631.7109375, 187.046875)
