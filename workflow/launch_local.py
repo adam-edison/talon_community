@@ -2,7 +2,7 @@
 
 import subprocess
 
-from talon import Module, app
+from talon import Module, actions, app
 
 mod = Module()
 
@@ -10,8 +10,8 @@ mod = Module()
 @mod.action_class
 class UserActions:
     def launch_local(port: int):
-        """Open http://localhost:<port>/app in Brave browser."""
-        url = f"http://localhost:{port}/app"
+        """Open http://localhost:<port> in Brave browser."""
+        url = f"http://localhost:{port}"
         if app.platform == "mac":
             # Brave Browser is the standard app name on macOS
             subprocess.run(
@@ -36,6 +36,10 @@ class UserActions:
             import webbrowser
 
             webbrowser.open(url)
+
+    def launch_local_app(port: int):
+        """Open http://localhost:<port>/app in Brave browser."""
+        actions.user.open_in_brave(f"http://localhost:{port}/app")
 
     def open_in_brave(url: str):
         """Open <url> in Brave browser."""
