@@ -10,8 +10,8 @@ mod = Module()
 @mod.action_class
 class UserActions:
     def launch_local(port: int):
-        """Open http://localhost:<port> in Brave browser."""
-        url = f"http://localhost:{port}"
+        """Open http://localhost:<port>/app in Brave browser."""
+        url = f"http://localhost:{port}/app"
         if app.platform == "mac":
             # Brave Browser is the standard app name on macOS
             subprocess.run(
