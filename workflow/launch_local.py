@@ -41,6 +41,14 @@ class UserActions:
         """Open http://localhost:<port>/app in Brave browser."""
         actions.user.open_in_brave(f"http://localhost:{port}/app")
 
+    def go_local(port: int):
+        """Load http://localhost:<port> in the current browser tab."""
+        actions.browser.go(f"http://localhost:{port}")
+
+    def go_local_app(port: int):
+        """Load http://localhost:<port>/app in the current browser tab."""
+        actions.browser.go(f"http://localhost:{port}/app")
+
     def open_in_brave(url: str):
         """Open <url> in Brave browser."""
         if app.platform == "mac":
