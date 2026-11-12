@@ -8,4 +8,4 @@ key(keypad_minus):
 
 key(keypad_plus):
     speech.enable()
-    sound.set_microphone("Default")
+    sound.set_microphone("System Default")
