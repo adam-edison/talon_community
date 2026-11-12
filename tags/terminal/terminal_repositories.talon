@@ -19,6 +19,7 @@ cursor <user.repo_paths>: insert('cursor "{repo_paths}"\n')
 cursor dot: insert('cursor .\n')
 
 (claude | chat) launch: insert('claude\n')
+(claude | chat) continue: insert('claude --continue\n')
 
 backlog browser: insert('backlog browser\n')
 
