@@ -39,3 +39,7 @@ skip <number_small>: user.skip_tab(number_small)
 skip clear: user.clear_skip_list()
 
 start ember <number>: insert("/start emb-{number}")
+
+(term clear | clear term):
+    insert("clear")
+    key(enter)
