@@ -1,4 +1,4 @@
-mode: user.game
+mode: all
 -
 
 key(keypad_minus):
