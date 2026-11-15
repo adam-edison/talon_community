@@ -53,6 +53,6 @@ clear next ticket:
     sleep(100ms)
     key(enter)
     sleep(100ms)
-    insert('/next-ticket')
+    insert('start next ticket')
     sleep(100ms)
     key(enter)
