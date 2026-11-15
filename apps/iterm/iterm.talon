@@ -43,3 +43,5 @@ start ember <number>: insert("/start emb-{number}")
 (term clear | clear term):
     insert("clear")
     key(enter)
+
+clear everything: user.clear_panes_after_first()

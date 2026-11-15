@@ -1,4 +1,5 @@
 from talon import Context, Module, actions
+from talon.mac import applescript
 
 ctx = Context()
 mod = Module()
@@ -16,6 +17,15 @@ total_tabs: int = 9
 cycle_index: int = 0
 skip_tabs: set = set()
 
+CLEAR_PANES_AFTER_FIRST_SCRIPT = """
+tell application "iTerm2"
+    set paneList to sessions of current tab of current window
+    repeat with paneIndex from 2 to count of paneList
+        tell item paneIndex of paneList to write text "clear"
+    end repeat
+end tell
+"""
+
 def _clear_skip_list():
     """Clear the skip list (internal)."""
     global skip_tabs
@@ -28,7 +38,11 @@ class PaneActions:
 
     def pane_jump_into(tab_number: int, pane_number: int):
         """Jumps to the specified pane in the specified tab."""
-    
+
+    def clear_panes_after_first():
+        """Runs clear in every pane of the current iTerm tab except the first one."""
+        applescript.run(CLEAR_PANES_AFTER_FIRST_SCRIPT)
+
     def set_iterm_tab_primary(number: int):
         """Sets the primary iTerm tab number."""
         global primary_tab, cycle_index
