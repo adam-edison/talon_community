@@ -48,7 +48,7 @@ backlog browser: insert('backlog browser\n')
     sleep(1000ms)
     insert('claude\n')
 
-clear next ticket:
+start next ticket:
     insert('/clear')
     sleep(100ms)
     key(enter)
