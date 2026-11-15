@@ -26,6 +26,21 @@ tell application "iTerm2"
 end tell
 """
 
+SELECT_PANE_SCRIPT = """
+tell application "iTerm2"
+    tell session {pane_number} of current tab of current window to select
+end tell
+"""
+
+SELECT_TAB_AND_PANE_SCRIPT = """
+tell application "iTerm2"
+    tell tab {tab_number} of current window
+        select
+        tell session {pane_number} to select
+    end tell
+end tell
+"""
+
 def _clear_skip_list():
     """Clear the skip list (internal)."""
     global skip_tabs
@@ -126,15 +141,11 @@ class UserActions:
         actions.key("ctrl-l")
 
     def pane_jump(number: int):
-        actions.key(f"ctrl-{number}")
+        applescript.run(SELECT_PANE_SCRIPT.format(pane_number=number))
 
     def pane_jump_into(tab_number: int, pane_number: int):
-        if not (1 <= tab_number <= 9):
-            return
-
-        if not (1 <= pane_number <= 9):
-            return
-
-        actions.key(f"cmd-{tab_number}")
-        actions.sleep("200ms")
-        actions.key(f"ctrl-{pane_number}")
+        script = SELECT_TAB_AND_PANE_SCRIPT.format(
+            tab_number=tab_number,
+            pane_number=pane_number,
+        )
+        applescript.run(script)
