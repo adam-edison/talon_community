@@ -56,3 +56,12 @@ start next ticket:
     insert('start next ticket')
     sleep(100ms)
     key(enter)
+
+loop factory:
+    insert('/clear')
+    sleep(100ms)
+    key(enter)
+    sleep(100ms)
+    insert('/loop /factory')
+    sleep(100ms)
+    key(enter)
